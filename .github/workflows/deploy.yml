@@ -33,6 +33,34 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Check and Import Existing Resources
+        continue-on-error: true
+        run: |
+          echo "Checking for existing resources..."
+          
+          # Import S3 bucket if it exists
+          if aws s3 ls "s3://${{ env.BUCKET_NAME }}" 2>/dev/null; then
+            echo "Bucket exists, importing..."
+            terraform import -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}" aws_s3_bucket.website ${{ env.BUCKET_NAME }} || true
+            terraform import -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}" aws_s3_bucket_website_configuration.website ${{ env.BUCKET_NAME }} || true
+            terraform import -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}" aws_s3_bucket_public_access_block.website ${{ env.BUCKET_NAME }} || true
+            terraform import -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}" aws_s3_bucket_policy.website ${{ env.BUCKET_NAME }} || true
+          fi
+          
+          # Import CloudFront OAC if it exists
+          OAC_ID=$(aws cloudfront list-origin-access-controls --query "OriginAccessControlList.Items[?Name=='${{ env.BUCKET_NAME }}-oac'].Id" --output text 2>/dev/null || true)
+          if [ ! -z "$OAC_ID" ]; then
+            echo "CloudFront OAC exists, importing..."
+            terraform import -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}" aws_cloudfront_origin_access_control.website "$OAC_ID" || true
+          fi
+          
+          # Import CloudFront distribution if it exists
+          DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='Apology website for Buslat'].Id" --output text 2>/dev/null || true)
+          if [ ! -z "$DIST_ID" ]; then
+            echo "CloudFront distribution exists, importing..."
+            terraform import -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}" aws_cloudfront_distribution.website "$DIST_ID" || true
+          fi
+
       - name: Terraform Plan
         run: terraform plan -var="bucket_name=${{ env.BUCKET_NAME }}" -var="aws_region=${{ env.AWS_REGION }}"
 
