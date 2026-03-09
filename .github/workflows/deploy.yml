@@ -42,10 +42,19 @@ jobs:
       - name: Get Website URL
         id: url
         run: |
-          URL=$(terraform output -raw website_url)
-          echo "website_url=$URL" >> $GITHUB_OUTPUT
+          HTTPS_URL=$(terraform output -raw website_url)
+          echo "website_url=$HTTPS_URL" >> $GITHUB_OUTPUT
           echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "Website URL: $URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Share this URL with Buslat:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "$HTTPS_URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Works on all phones and browsers" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Secure HTTPS connection" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Free SSL certificate included" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⏱️ First deployment takes 10-15 minutes for CloudFront setup" >> $GITHUB_STEP_SUMMARY
 
       - name: Sync files to S3
         run: |
